@@ -11,7 +11,7 @@
 
   const groundH = 60;
   const gravity = 0.5;
-  const jumpV   = -10;   
+  const jumpV   = -14;   // ジャンプ力を上げる
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
@@ -24,7 +24,7 @@
 
   let obstacles = [];
   let lastSpawn = 0;
-  let nextGap = 1400; // 障害物の出現間隔を長く
+  let nextGap = 1400;
   let speed = baseSpeed;
   let score = 0;
   let high = Number(localStorage.getItem('runner_high') || 0);
@@ -53,7 +53,7 @@
   function maybeSpawn(ts) {
     if (ts - lastSpawn >= nextGap) {
       const w = rand(28, 40);
-      const h = rand(36, 50); // 高さを少し低めにしてプレイヤーが見えるように
+      const h = rand(36, 50);
       obstacles.push({
         x: W + 20,
         y: H - groundH - h,
