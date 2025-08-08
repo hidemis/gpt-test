@@ -11,16 +11,16 @@
 
   const groundH = 60;
   const gravity = 0.5;
-  const jumpV   = -14; // 高さを7割程度に抑えるため更に弱く
+  const jumpV   = -12; // 高さを7割程度に抑えるため弱め
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
   const speedEveryMs = 1500;
 
-  const maxHoldMs = 180; // 少し短く
-  const holdThrust = -0.35; // 長押し補助も弱める
-  const jumpBoostMax = 50;  // ブースト時間短縮
-  const jumpBoostAccel = -0.7; // ブースト加速度をさらに弱める
+  const maxHoldMs = 150;
+  const holdThrust = -0.3;
+  const jumpBoostMax = 40;
+  const jumpBoostAccel = -0.6;
   let spaceHeld = false;
   let holdMs = 0;
   let boostMs = 0;
@@ -144,11 +144,10 @@
     player.y  += player.vy;
 
     // ---- 上限（キャンバス高さの約7割）で頭打ち ----
-    const ceilingY = Math.max(0, Math.floor(H * 0.30)); // 上から30%のライン（= 高さ7割）
+    const ceilingY = Math.floor(H * 0.30); // 上から30%
     if (player.y < ceilingY) {
       player.y = ceilingY;
-      if (player.vy < 0) player.vy = 0;       // これ以上は上昇しない
-      // ブーストと長押しの効果も打ち切って、自然に落下へ
+      if (player.vy < 0) player.vy = 0;
       boostMs = jumpBoostMax;
       holdMs  = maxHoldMs;
       spaceHeld = false;
