@@ -41,6 +41,7 @@
   let running = false;
   let lastTs = 0;
   let accelTimer = 0;
+  let bgOffset = 0; // 背景スクロール用の累積オフセット（ms換算）
 
   function jump() {
     if (!running) return;
@@ -99,32 +100,122 @@
 
   function drawBackground(offset){
     ctx.clearRect(0,0,W,H);
+
+    // 空
     const skyGrad = ctx.createLinearGradient(0,0,0,H);
-    skyGrad.addColorStop(0, '#9be7ff');
-    skyGrad.addColorStop(1, '#e1f5fe');
+    skyGrad.addColorStop(0, '#8fd3fe');
+    skyGrad.addColorStop(1, '#e0f7ff');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0,0,W,H);
 
-    // 雲
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    for (let i = 0; i < 3; i++) {
-      const x = (offset * 0.1 + i * 250) % (W + 200) - 100;
-      const y = 50 + i * 20;
+    // ===== パララックス：遠景の山（最も遅い） =====
+    const farSpeed = 0.12;
+    ctx.fillStyle = '#b3e5fc';
+    for (let x=-240; x < W+240; x+=240){
+      const bx = (x - (offset * farSpeed) % 240);
       ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
-      ctx.arc(x + 25, y + 5, 20, 0, Math.PI * 2);
-      ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
+      ctx.moveTo(bx, H - groundH);
+      ctx.lineTo(bx+120, H - groundH - 95);
+      ctx.lineTo(bx+240, H - groundH);
+      ctx.closePath();
       ctx.fill();
     }
 
-    // 山
+    // 中景の山（雪化粧、少し速い）
+    const midSpeed = 0.22;
+    for (let x=-220; x < W+220; x+=220){
+      const bx = (x - (offset * midSpeed) % 220);
+      // 本体
+      ctx.fillStyle = '#90caf9';
+      ctx.beginPath();
+      ctx.moveTo(bx, H - groundH);
+      ctx.lineTo(bx+110, H - groundH - 70);
+      ctx.lineTo(bx+220, H - groundH);
+      ctx.closePath();
+      ctx.fill();
+      // 雪
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(bx+110, H - groundH - 70);
+      ctx.lineTo(bx+80,  H - groundH - 50);
+      ctx.lineTo(bx+140, H - groundH - 50);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 近景の丘（最も速い）
+    const nearSpeed = 0.38;
+    ctx.fillStyle = '#64b5f6';
+    for (let x=-200; x < W+200; x+=200){
+      const bx = (x - (offset * nearSpeed) % 200);
+      ctx.beginPath();
+      ctx.moveTo(bx, H - groundH);
+      ctx.quadraticCurveTo(bx+50, H - groundH - 35, bx+100, H - groundH);
+      ctx.quadraticCurveTo(bx+150, H - groundH - 35, bx+200, H - groundH);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // ===== パララックス：雲（2レイヤー） =====
+    const cloud = (cx, cy, r) => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.arc(cx+r*0.9, cy+r*0.2, r*0.8, 0, Math.PI*2);
+      ctx.arc(cx-r*0.9, cy+r*0.2, r*0.7, 0, Math.PI*2);
+      ctx.fill();
+    };
+
+    // 遠い雲（ゆっくり）
+    const cloudFar = 0.08;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    for (let x=-180; x < W+180; x+=180){
+      const cx = (x - (offset * cloudFar) % 180);
+      cloud(cx, 70, 22);
+    }
+    // 近い雲（少し速い）
+    const cloudNear = 0.18;
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    for (let x=-220; x < W+220; x+=220){
+      const cx = (x - (offset * cloudNear) % 220);
+      cloud(cx, 45, 18);
+    }
+
+    // 地面（芝 + 走査ストライプ）
+    const grdY = H - groundH;
+    ctx.fillStyle = '#6fcf97';
+    ctx.fillRect(0, grdY, W, groundH);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, grdY, W, groundH);
+    ctx.clip();
+    ctx.fillStyle = '#58d5c9';
+    const stripeSpeed = 0.6;
+    for (let x=-60; x < W+60; x+=30){
+      const sx = (x - (offset * stripeSpeed) % 30);
+      ctx.fillRect(sx, grdY, 12, groundH);
+    }
+    ctx.restore();
+  }
+
+    // 山（パララックス: 中）
     ctx.fillStyle = '#8d6e63';
     for (let i = 0; i < 3; i++) {
-      const mx = (offset * 0.05 + i * 300) % (W + 200) - 100;
+      const mx = (offset * 0.05 + i * 300) % (W + 300) - 150;
       ctx.beginPath();
       ctx.moveTo(mx, H - groundH);
-      ctx.lineTo(mx + 150, H - groundH);
-      ctx.lineTo(mx + 75, H - groundH - 120);
+      ctx.lineTo(mx + 200, H - groundH);
+      ctx.lineTo(mx + 100, H - groundH - 150);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 手前の低い丘（パララックス: 速い）
+    ctx.fillStyle = '#a5d6a7';
+    for (let i = 0; i < 5; i++) {
+      const hx = (offset * 0.2 + i * 160) % (W + 200) - 100;
+      ctx.beginPath();
+      ctx.moveTo(hx, H - groundH);
+      ctx.quadraticCurveTo(hx + 40, H - groundH - 30, hx + 80, H - groundH);
       ctx.closePath();
       ctx.fill();
     }
@@ -220,7 +311,8 @@
     const dt = ts - lastTs;
     lastTs = ts;
     update(dt, ts);
-    render(performance.now() * (speed * 0.5));
+    bgOffset += dt * 0.06 * (speed + 1); // dtはms。+1で低速時も動く
+    render(bgOffset);
     requestAnimationFrame(loop);
   }
 
