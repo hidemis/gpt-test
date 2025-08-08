@@ -10,17 +10,22 @@
   const H = canvas.height;
 
   const groundH = 60;
-  const gravity = 0.38;      // 少し軽くしてゆったり上昇
-  const jumpV   = -18;       // ジャンプ初速をさらに強化
+  const gravity = 0.5;       // 少し重くして初速とのコントラストを出し、弧を強調
+  const jumpV   = -22;       // 押した瞬間の高さを大きく
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
   const speedEveryMs = 1500;
 
   // 可変ジャンプ
-  const maxHoldMs = 220;     // 長押し最大時間を延長
-  const holdThrust = -0.55;  // 長押し時の追い風を少し強く
+  const maxHoldMs = 220;     // 長押し最大時間（据え置き）
+  const holdThrust = -0.45;  // 長押し補助は少し控えめ（初速強化とバランス）
+  // 押した瞬間の“ポップ”感を出す初期インパルス（長押し不要で高さが出る）
+  const jumpBoostMax = 90;   // ms: 初期ブースト継続時間
+  const jumpBoostAccel = -1.1; // 上向き加速度（dtに比例）
   let spaceHeld = false;
+  let holdMs = 0;
+  let boostMs = 0;
   let holdMs = 0;
 
   const player = {
@@ -45,8 +50,10 @@
     if (player.onGround) {
       player.vy = jumpV;
       player.onGround = false;
-      holdMs = 0;
+      holdMs = 0;    // 可変ジャンプ用
+      boostMs = 0;   // 初期ブースト開始
     }
+  }
   }
 
   document.addEventListener('keydown', (e) => {
@@ -66,7 +73,7 @@
   function maybeSpawn(ts) {
     if (ts - lastSpawn >= nextGap) {
       const w = rand(26, 36);
-      const h = rand(24, 40); // さらに低め
+      const h = rand(24, 40);
       obstacles.push({
         x: W + 20,
         y: H - groundH - h,
@@ -127,19 +134,34 @@
   }
 
   function update(dt, ts){
+    // 可変ジャンプ：長押し中、上昇中(vy<0)なら追い風
     if (!player.onGround && spaceHeld && holdMs < maxHoldMs && player.vy < 0) {
       const factor = Math.min(maxHoldMs - holdMs, dt);
       player.vy += (holdThrust * (factor / 16));
       holdMs += dt;
     }
+
+    // 押した瞬間の“ポップ”感：最初の ~90ms は追加で上向き加速度
+    if (!player.onGround && boostMs < jumpBoostMax) {
+      const factor = Math.min(jumpBoostMax - boostMs, dt);
+      player.vy += (jumpBoostAccel * (factor / 16));
+      boostMs += dt;
+    }
+
+    // 物理更新
     player.vy += gravity;
     player.y  += player.vy;
+
+    // 着地処理
     if (player.y + player.h >= H - groundH){
       player.y = H - groundH - player.h;
       player.vy = 0;
       player.onGround = true;
       holdMs = 0;
+      boostMs = 0;
     }
+
+    // 障害物移動とスコア
     obstacles.forEach(o => { o.x -= speed; });
     for (let i=obstacles.length-1; i>=0; i--){
       if (obstacles[i].x + obstacles[i].w < 0){
@@ -147,12 +169,18 @@
         setScore(score + 1);
       }
     }
+
+    // 生成
     maybeSpawn(ts);
+
+    // 当たり判定（少し甘め）
     const pInset = 4;
     const pBox = {x:player.x + pInset, y:player.y + pInset, w:player.w - pInset*2, h:player.h - pInset*2};
     for (const o of obstacles){
       if (hit(pBox, o)) { endGame(); break; }
     }
+
+    // 加速
     accelTimer += dt;
     if (accelTimer >= speedEveryMs){
       accelTimer = 0;
@@ -160,7 +188,7 @@
     }
   }
 
-  function render(offset){
+  function render(offset)(offset){
     drawBackground(offset);
     drawObstacles();
     drawPlayer();
