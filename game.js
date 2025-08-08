@@ -27,7 +27,7 @@
 
   const player = {
     x: 100, y: H - groundH - 40, w: 36, h: 36, vy: 0, onGround: true,
-    color1: '#ffeb3b', color2: '#ff9f43'
+    color1: '#ffeb3b', color2: '#ff9f43', rot: 0
   };
 
   let obstacles = [];
@@ -41,7 +41,7 @@
   let running = false;
   let lastTs = 0;
   let accelTimer = 0;
-  let bgOffset = 0; // 背景スクロール用の累積オフセット（ms換算）
+  let bgOffset = 0;
 
   function jump() {
     if (!running) return;
@@ -74,8 +74,10 @@
       obstacles.push({
         x: W + 20,
         y: H - groundH - h,
-        w, h,
-        hue: Math.floor(rand(180, 330))
+        w,
+        h,
+        hue: Math.floor(rand(180, 330)),
+        roof: Math.floor(rand(16, 28))
       });
       lastSpawn = ts;
       const baseGap = 1500;
@@ -101,18 +103,16 @@
   function drawBackground(offset){
     ctx.clearRect(0,0,W,H);
 
-    // 空
     const skyGrad = ctx.createLinearGradient(0,0,0,H);
     skyGrad.addColorStop(0, '#8fd3fe');
     skyGrad.addColorStop(1, '#e0f7ff');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0,0,W,H);
 
-    // ===== パララックス：遠景の山（最も遅い） =====
     const farSpeed = 0.12;
     ctx.fillStyle = '#b3e5fc';
-    for (let x=-240; x < W+240; x+=240){
-      const bx = (x - (offset * farSpeed) % 240);
+    for (let x=-240; x < W+240; x+=480){
+      const bx = (x - (offset * farSpeed) % 480);
       ctx.beginPath();
       ctx.moveTo(bx, H - groundH);
       ctx.lineTo(bx+120, H - groundH - 95);
@@ -121,11 +121,9 @@
       ctx.fill();
     }
 
-    // 中景の山（雪化粧、少し速い）
     const midSpeed = 0.22;
-    for (let x=-220; x < W+220; x+=220){
-      const bx = (x - (offset * midSpeed) % 220);
-      // 本体
+    for (let x=-220; x < W+220; x+=440){
+      const bx = (x - (offset * midSpeed) % 440);
       ctx.fillStyle = '#90caf9';
       ctx.beginPath();
       ctx.moveTo(bx, H - groundH);
@@ -133,7 +131,6 @@
       ctx.lineTo(bx+220, H - groundH);
       ctx.closePath();
       ctx.fill();
-      // 雪
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.moveTo(bx+110, H - groundH - 70);
@@ -143,20 +140,6 @@
       ctx.fill();
     }
 
-    // 近景の丘（最も速い）
-    const nearSpeed = 0.38;
-    ctx.fillStyle = '#64b5f6';
-    for (let x=-200; x < W+200; x+=200){
-      const bx = (x - (offset * nearSpeed) % 200);
-      ctx.beginPath();
-      ctx.moveTo(bx, H - groundH);
-      ctx.quadraticCurveTo(bx+50, H - groundH - 35, bx+100, H - groundH);
-      ctx.quadraticCurveTo(bx+150, H - groundH - 35, bx+200, H - groundH);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // ===== パララックス：雲（2レイヤー） =====
     const cloud = (cx, cy, r) => {
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI*2);
@@ -164,85 +147,100 @@
       ctx.arc(cx-r*0.9, cy+r*0.2, r*0.7, 0, Math.PI*2);
       ctx.fill();
     };
-
-    // 遠い雲（ゆっくり）
     const cloudFar = 0.08;
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    for (let x=-180; x < W+180; x+=180){
-      const cx = (x - (offset * cloudFar) % 180);
+    for (let x=-180; x < W+180; x+=360){
+      const cx = (x - (offset * cloudFar) % 360);
       cloud(cx, 70, 22);
     }
-    // 近い雲（少し速い）
     const cloudNear = 0.18;
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    for (let x=-220; x < W+220; x+=220){
-      const cx = (x - (offset * cloudNear) % 220);
+    for (let x=-220; x < W+220; x+=440){
+      const cx = (x - (offset * cloudNear) % 440);
       cloud(cx, 45, 18);
     }
 
-    // 地面（芝 + 走査ストライプ）
-    const grdY = H - groundH;
-    ctx.fillStyle = '#6fcf97';
-    ctx.fillRect(0, grdY, W, groundH);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, grdY, W, groundH);
-    ctx.clip();
-    ctx.fillStyle = '#58d5c9';
-    const stripeSpeed = 0.6;
-    for (let x=-60; x < W+60; x+=30){
-      const sx = (x - (offset * stripeSpeed) % 30);
-      ctx.fillRect(sx, grdY, 12, groundH);
-    }
-    ctx.restore();
-  }
-
-    // 山（パララックス: 中）
-    ctx.fillStyle = '#8d6e63';
-    for (let i = 0; i < 3; i++) {
-      const mx = (offset * 0.05 + i * 300) % (W + 300) - 150;
-      ctx.beginPath();
-      ctx.moveTo(mx, H - groundH);
-      ctx.lineTo(mx + 200, H - groundH);
-      ctx.lineTo(mx + 100, H - groundH - 150);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 手前の低い丘（パララックス: 速い）
-    ctx.fillStyle = '#a5d6a7';
-    for (let i = 0; i < 5; i++) {
-      const hx = (offset * 0.2 + i * 160) % (W + 200) - 100;
-      ctx.beginPath();
-      ctx.moveTo(hx, H - groundH);
-      ctx.quadraticCurveTo(hx + 40, H - groundH - 30, hx + 80, H - groundH);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 地面
     ctx.fillStyle = '#6fcf97';
     ctx.fillRect(0, H - groundH, W, groundH);
   }
 
   function drawPlayer(){
-    const {x,y,w,h} = player;
-    const grad = ctx.createLinearGradient(x, y, x+w, y+h);
+    const {x,y,w,h,rot} = player;
+    ctx.save();
+    ctx.translate(x + w/2, y + h/2);
+    ctx.rotate(rot);
+
+    // ニコちゃん本体
+    const grad = ctx.createRadialGradient(0,0,w*0.1, 0,0,w/2);
     grad.addColorStop(0, player.color1);
     grad.addColorStop(1, player.color2);
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(x + w/2, y + h/2, w/2, 0, Math.PI*2);
+    ctx.arc(0, 0, w/2, 0, Math.PI*2);
     ctx.fill();
+
+    // 目
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-w*0.18, -h*0.15, w*0.07, 0, Math.PI*2);
+    ctx.arc(w*0.18, -h*0.15, w*0.07, 0, Math.PI*2);
+    ctx.fill();
+
+    // 口
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, w*0.22, 0.15*Math.PI, 0.85*Math.PI);
+    ctx.stroke();
+
+    ctx.restore();
   }
 
   function drawObstacles(){
     obstacles.forEach(o=>{
-      const grad = ctx.createLinearGradient(o.x, o.y, o.x+o.w, o.y+o.h);
-      grad.addColorStop(0, `hsl(${o.hue} 80% 60%)`);
-      grad.addColorStop(1, `hsl(${(o.hue+40)%360} 75% 45%)`);
-      ctx.fillStyle = grad;
-      ctx.fillRect(o.x, o.y, o.w, o.h);
+      const bx = o.x, by = o.y, w = o.w, h = o.h;
+      const roofH = o.roof || 20;
+      const wallHue = o.hue;
+      const roofHue = (o.hue + 20) % 360;
+
+      ctx.fillStyle = `hsl(${wallHue} 70% 70%)`;
+      ctx.fillRect(bx, by, w, h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx+0.5, by+0.5, w-1, h-1);
+
+      ctx.fillStyle = `hsl(${roofHue} 65% 45%)`;
+      ctx.beginPath();
+      ctx.moveTo(bx - 4, by);
+      ctx.lineTo(bx + w + 4, by);
+      ctx.lineTo(bx + w/2, by - roofH);
+      ctx.closePath();
+      ctx.fill();
+
+      const doorW = Math.max(8, Math.floor(w * 0.28));
+      const doorH = Math.min(Math.floor(h * 0.55), 28);
+      const dx = Math.floor(bx + w * 0.12);
+      const dy = Math.floor(by + h - doorH);
+      ctx.fillStyle = `hsl(${(roofHue+10)%360} 45% 35%)`;
+      ctx.fillRect(dx, dy, doorW, doorH);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      ctx.arc(dx + doorW - 3, dy + Math.floor(doorH*0.55), 1.5, 0, Math.PI*2);
+      ctx.fill();
+
+      const win = Math.max(8, Math.floor(w * 0.28));
+      const wx = Math.floor(bx + w - win - w*0.12);
+      const wy = Math.floor(by + Math.max(4, h*0.18));
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(wx, wy, win, win);
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.strokeRect(wx+0.5, wy+0.5, win-1, win-1);
+      ctx.beginPath();
+      ctx.moveTo(wx, wy + win/2);
+      ctx.lineTo(wx + win, wy + win/2);
+      ctx.moveTo(wx + win/2, wy);
+      ctx.lineTo(wx + win/2, wy + win);
+      ctx.stroke();
     });
   }
 
@@ -275,7 +273,11 @@
       player.onGround = true;
       holdMs = 0;
       boostMs = 0;
+    } else {
+      player.onGround = false;
     }
+
+    player.rot += (player.onGround ? speed/50 : 0.02);
 
     obstacles.forEach(o => { o.x -= speed; });
     for (let i=obstacles.length-1; i>=0; i--){
@@ -311,7 +313,7 @@
     const dt = ts - lastTs;
     lastTs = ts;
     update(dt, ts);
-    bgOffset += dt * 0.06 * (speed + 1); // dtはms。+1で低速時も動く
+    bgOffset += dt * 0.06 * (speed + 1);
     render(bgOffset);
     requestAnimationFrame(loop);
   }
@@ -325,6 +327,7 @@
     player.y  = H - groundH - player.h;
     player.vy = 0;
     player.onGround = true;
+    player.rot = 0;
     obstacles = [];
     lastSpawn = 0;
     nextGap = 1500;
