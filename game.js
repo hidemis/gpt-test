@@ -10,12 +10,18 @@
   const H = canvas.height;
 
   const groundH = 60;
-  const gravity = 0.5;
-  const jumpV   = -14;   // ジャンプ力を上げる
+  const gravity = 0.45;      // 少し軽くして上がりやすく
+  const jumpV   = -16;       // ジャンプ初速をさらに強化
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
   const speedEveryMs = 1500;
+
+  // 可変ジャンプ：押し続けると少し高く飛べる
+  const maxHoldMs = 180;     // 長押し最大時間
+  const holdThrust = -0.5;   // 長押し中の追い風（上向き加速度）
+  let spaceHeld = false;
+  let holdMs = 0;
 
   const player = {
     x: 100, y: H - groundH - 40, w: 36, h: 36, vy: 0, onGround: true,
@@ -24,7 +30,7 @@
 
   let obstacles = [];
   let lastSpawn = 0;
-  let nextGap = 1400;
+  let nextGap = 1500; // 出現間隔をさらに伸ばす
   let speed = baseSpeed;
   let score = 0;
   let high = Number(localStorage.getItem('runner_high') || 0);
@@ -39,12 +45,21 @@
     if (player.onGround) {
       player.vy = jumpV;
       player.onGround = false;
+      holdMs = 0;           // 長押しカウンタを開始
     }
   }
+
+  // 入力（キーボード）
   document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') { e.preventDefault(); jump(); }
+    if (e.code === 'Space') { e.preventDefault(); if (!spaceHeld) jump(); spaceHeld = true; }
   });
-  canvas.addEventListener('click', jump);
+  document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') spaceHeld = false;
+  });
+
+  // 入力（クリック／タッチ）
+  canvas.addEventListener('pointerdown', () => { if (!spaceHeld) jump(); spaceHeld = true; });
+  window.addEventListener('pointerup',   () => { spaceHeld = false; });
 
   retryBtn.addEventListener('click', startGame);
 
@@ -52,8 +67,8 @@
 
   function maybeSpawn(ts) {
     if (ts - lastSpawn >= nextGap) {
-      const w = rand(28, 40);
-      const h = rand(36, 50);
+      const w = rand(26, 36);
+      const h = rand(28, 46); // さらに低め：越えやすく
       obstacles.push({
         x: W + 20,
         y: H - groundH - h,
@@ -62,9 +77,9 @@
       });
       lastSpawn = ts;
 
-      const baseGap = 1400;
-      const minGap  = 800;
-      nextGap = Math.max(minGap, baseGap - (speed - baseSpeed) * 40 + rand(-60, 60));
+      const baseGap = 1500;
+      const minGap  = 900; // 最小でも広め
+      nextGap = Math.max(minGap, baseGap - (speed - baseSpeed) * 30 + rand(-80, 80));
     }
   }
 
@@ -172,13 +187,23 @@
   }
 
   function update(dt, ts){
+    // 可変ジャンプ：長押し中、上昇中(vy<0)なら追い風
+    if (!player.onGround && spaceHeld && holdMs < maxHoldMs && player.vy < 0) {
+      const factor = Math.min(maxHoldMs - holdMs, dt);
+      player.vy += (holdThrust * (factor / 16));
+      holdMs += dt;
+    }
+
     player.vy += gravity;
     player.y  += player.vy;
+
     if (player.y + player.h >= H - groundH){
       player.y = H - groundH - player.h;
       player.vy = 0;
       player.onGround = true;
+      holdMs = 0; // 地面に着いたらリセット
     }
+
     obstacles.forEach(o => { o.x -= speed; });
     for (let i=obstacles.length-1; i>=0; i--){
       if (obstacles[i].x + obstacles[i].w < 0){
@@ -186,11 +211,16 @@
         setScore(score + 1);
       }
     }
+
     maybeSpawn(ts);
-    const pBox = {x:player.x, y:player.y, w:player.w, h:player.h};
+
+    // 判定は少し甘め（当たり判定縮小）
+    const pInset = 4;
+    const pBox = {x:player.x + pInset, y:player.y + pInset, w:player.w - pInset*2, h:player.h - pInset*2};
     for (const o of obstacles){
       if (hit(pBox, o)) { endGame(); break; }
     }
+
     accelTimer += dt;
     if (accelTimer >= speedEveryMs){
       accelTimer = 0;
@@ -225,7 +255,7 @@
     player.onGround = true;
     obstacles = [];
     lastSpawn = 0;
-    nextGap = 1400;
+    nextGap = 1500;
     retryBtn.style.display = 'none';
     requestAnimationFrame(loop);
   }
