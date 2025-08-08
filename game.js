@@ -53,7 +53,13 @@
     }
   }
 
-  document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', (e) => {
+    // リトライ表示中は Enter / Space で即スタート
+    if (!running && (e.code === 'Enter' || e.code === 'Space')) {
+      e.preventDefault();
+      startGame();
+      return;
+    }
     if (e.code === 'Space') { e.preventDefault(); if (!spaceHeld) jump(); spaceHeld = true; }
   });
   document.addEventListener('keyup', (e) => {
@@ -63,7 +69,12 @@
   canvas.addEventListener('pointerdown', () => { if (!spaceHeld) jump(); spaceHeld = true; });
   window.addEventListener('pointerup',   () => { spaceHeld = false; });
 
-  retryBtn.addEventListener('click', startGame);
+// クリックより先に反応（モバイルの300ms遅延対策）
+  retryBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!running) startGame();
+  });
 
   function rand(min, max){ return Math.random() * (max - min) + min; }
 
