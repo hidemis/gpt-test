@@ -9,14 +9,13 @@
   const W = canvas.width;
   const H = canvas.height;
 
-  // 物理とゲーム設定（速度を抑えめに）
   const groundH = 60;
   const gravity = 0.5;
   const jumpV   = -10;   
-  const baseSpeed = 2.4; // 開始スピードを低く
-  const maxSpeed  = 7;   // 上限も抑える
-  const speedGain = 0.08;// 加速も緩やか
-  const speedEveryMs = 1500; // 加速間隔を長く
+  const baseSpeed = 2.4;
+  const maxSpeed  = 7;
+  const speedGain = 0.08;
+  const speedEveryMs = 1500;
 
   const player = {
     x: 100, y: H - groundH - 40, w: 36, h: 36, vy: 0, onGround: true,
@@ -25,7 +24,7 @@
 
   let obstacles = [];
   let lastSpawn = 0;
-  let nextGap = 1000; // 最初はさらに余裕
+  let nextGap = 1400; // 障害物の出現間隔を長く
   let speed = baseSpeed;
   let score = 0;
   let high = Number(localStorage.getItem('runner_high') || 0);
@@ -54,7 +53,7 @@
   function maybeSpawn(ts) {
     if (ts - lastSpawn >= nextGap) {
       const w = rand(28, 40);
-      const h = rand(36, 70);
+      const h = rand(36, 50); // 高さを少し低めにしてプレイヤーが見えるように
       obstacles.push({
         x: W + 20,
         y: H - groundH - h,
@@ -63,8 +62,8 @@
       });
       lastSpawn = ts;
 
-      const baseGap = 1000;
-      const minGap  = 600;
+      const baseGap = 1400;
+      const minGap  = 800;
       nextGap = Math.max(minGap, baseGap - (speed - baseSpeed) * 40 + rand(-60, 60));
     }
   }
@@ -226,7 +225,7 @@
     player.onGround = true;
     obstacles = [];
     lastSpawn = 0;
-    nextGap = 1000;
+    nextGap = 1400;
     retryBtn.style.display = 'none';
     requestAnimationFrame(loop);
   }
