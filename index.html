@@ -1,27 +1,23 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <title>ジャンピングプラットフォームランナー</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body class="parallax">
-    <div class="hud">
-      <h1>ジャンピングプラットフォームランナー</h1>
-      <div id="score">Score: 0 | High Score: 0</div>
+<head>
+  <meta charset="UTF-8" />
+  <title>ジャンピングプラットフォームランナー（Canvas版）</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="hud">
+    <h1>ジャンピングプラットフォームランナー</h1>
+    <div class="scores">
+      <span>スコア: <span id="score">0</span></span>
+      <span>／ ハイスコア: <span id="highscore">0</span></span>
     </div>
+  </div>
 
-    <!-- ゲームエリア（JSが参照する要素） -->
-    <div id="gameArea" class="game-area">
-      <!-- キャラクター（JSが参照する要素） -->
-      <div id="character" class="character"></div>
-      <!-- 地面 -->
-      <div class="ground"></div>
-    </div>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
 
-    <!-- リトライボタン -->
-    <button id="retryButton" class="btn retry">リトライ</button>
+  <button id="retryButton" class="btn retry">リトライ</button>
 
-    <script src="game.js"></script>
-  </body>
+  <script src="game.js"></script>
+</body>
 </html>
