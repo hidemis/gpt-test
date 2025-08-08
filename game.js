@@ -10,16 +10,16 @@
   const H = canvas.height;
 
   const groundH = 60;
-  const gravity = 0.45;      // 少し軽くして上がりやすく
-  const jumpV   = -16;       // ジャンプ初速をさらに強化
+  const gravity = 0.38;      // 少し軽くしてゆったり上昇
+  const jumpV   = -18;       // ジャンプ初速をさらに強化
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
   const speedEveryMs = 1500;
 
-  // 可変ジャンプ：押し続けると少し高く飛べる
-  const maxHoldMs = 180;     // 長押し最大時間
-  const holdThrust = -0.5;   // 長押し中の追い風（上向き加速度）
+  // 可変ジャンプ
+  const maxHoldMs = 220;     // 長押し最大時間を延長
+  const holdThrust = -0.55;  // 長押し時の追い風を少し強く
   let spaceHeld = false;
   let holdMs = 0;
 
@@ -30,7 +30,7 @@
 
   let obstacles = [];
   let lastSpawn = 0;
-  let nextGap = 1500; // 出現間隔をさらに伸ばす
+  let nextGap = 1500;
   let speed = baseSpeed;
   let score = 0;
   let high = Number(localStorage.getItem('runner_high') || 0);
@@ -45,11 +45,10 @@
     if (player.onGround) {
       player.vy = jumpV;
       player.onGround = false;
-      holdMs = 0;           // 長押しカウンタを開始
+      holdMs = 0;
     }
   }
 
-  // 入力（キーボード）
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Space') { e.preventDefault(); if (!spaceHeld) jump(); spaceHeld = true; }
   });
@@ -57,7 +56,6 @@
     if (e.code === 'Space') spaceHeld = false;
   });
 
-  // 入力（クリック／タッチ）
   canvas.addEventListener('pointerdown', () => { if (!spaceHeld) jump(); spaceHeld = true; });
   window.addEventListener('pointerup',   () => { spaceHeld = false; });
 
@@ -68,7 +66,7 @@
   function maybeSpawn(ts) {
     if (ts - lastSpawn >= nextGap) {
       const w = rand(26, 36);
-      const h = rand(28, 46); // さらに低め：越えやすく
+      const h = rand(24, 40); // さらに低め
       obstacles.push({
         x: W + 20,
         y: H - groundH - h,
@@ -76,9 +74,8 @@
         hue: Math.floor(rand(180, 330))
       });
       lastSpawn = ts;
-
       const baseGap = 1500;
-      const minGap  = 900; // 最小でも広め
+      const minGap  = 900;
       nextGap = Math.max(minGap, baseGap - (speed - baseSpeed) * 30 + rand(-80, 80));
     }
   }
@@ -104,61 +101,8 @@
     skyGrad.addColorStop(1, '#e1f5fe');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0,0,W,H);
-    ctx.fillStyle = '#b3e5fc';
-    const m1Speed = 0.15;
-    for (let x=-200; x < W+200; x+=220){
-      const bx = (x - (offset * m1Speed) % 220);
-      ctx.beginPath();
-      ctx.moveTo(bx, H - groundH);
-      ctx.lineTo(bx+110, H - groundH - 90);
-      ctx.lineTo(bx+220, H - groundH);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.fillStyle = '#81d4fa';
-    const m2Speed = 0.3;
-    for (let x=-200; x < W+200; x+=200){
-      const bx = (x - (offset * m2Speed) % 200);
-      ctx.beginPath();
-      ctx.moveTo(bx, H - groundH);
-      ctx.lineTo(bx+100, H - groundH - 60);
-      ctx.lineTo(bx+200, H - groundH);
-      ctx.closePath();
-      ctx.fill();
-    }
-    const cloud = (cx, cy, r) => {
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI*2);
-      ctx.arc(cx+r*0.9, cy+r*0.2, r*0.8, 0, Math.PI*2);
-      ctx.arc(cx-r*0.9, cy+r*0.2, r*0.7, 0, Math.PI*2);
-      ctx.fill();
-    };
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    const c1Speed = 0.1;
-    for (let x=-150; x < W+150; x+=180){
-      const cx = (x - (offset * c1Speed) % 180);
-      cloud(cx, 90, 24);
-    }
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    const c2Speed = 0.2;
-    for (let x=-200; x < W+200; x+=220){
-      const cx = (x - (offset * c2Speed) % 220);
-      cloud(cx, 55, 18);
-    }
-    const grdY = H - groundH;
     ctx.fillStyle = '#6fcf97';
-    ctx.fillRect(0, grdY, W, groundH);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, grdY, W, groundH);
-    ctx.clip();
-    const stripeSpeed = 0.8;
-    ctx.fillStyle = '#58d5c9';
-    for (let x=-60; x < W+60; x+=30){
-      const sx = (x - (offset * stripeSpeed) % 30);
-      ctx.fillRect(sx, grdY, 12, groundH);
-    }
-    ctx.restore();
+    ctx.fillRect(0, H - groundH, W, groundH);
   }
 
   function drawPlayer(){
@@ -167,10 +111,9 @@
     grad.addColorStop(0, player.color1);
     grad.addColorStop(1, player.color2);
     ctx.fillStyle = grad;
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
+    ctx.beginPath();
+    ctx.arc(x + w/2, y + h/2, w/2, 0, Math.PI*2);
+    ctx.fill();
   }
 
   function drawObstacles(){
@@ -180,30 +123,23 @@
       grad.addColorStop(1, `hsl(${(o.hue+40)%360} 75% 45%)`);
       ctx.fillStyle = grad;
       ctx.fillRect(o.x, o.y, o.w, o.h);
-      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(o.x+0.5, o.y+0.5, o.w-1, o.h-1);
     });
   }
 
   function update(dt, ts){
-    // 可変ジャンプ：長押し中、上昇中(vy<0)なら追い風
     if (!player.onGround && spaceHeld && holdMs < maxHoldMs && player.vy < 0) {
       const factor = Math.min(maxHoldMs - holdMs, dt);
       player.vy += (holdThrust * (factor / 16));
       holdMs += dt;
     }
-
     player.vy += gravity;
     player.y  += player.vy;
-
     if (player.y + player.h >= H - groundH){
       player.y = H - groundH - player.h;
       player.vy = 0;
       player.onGround = true;
-      holdMs = 0; // 地面に着いたらリセット
+      holdMs = 0;
     }
-
     obstacles.forEach(o => { o.x -= speed; });
     for (let i=obstacles.length-1; i>=0; i--){
       if (obstacles[i].x + obstacles[i].w < 0){
@@ -211,16 +147,12 @@
         setScore(score + 1);
       }
     }
-
     maybeSpawn(ts);
-
-    // 判定は少し甘め（当たり判定縮小）
     const pInset = 4;
     const pBox = {x:player.x + pInset, y:player.y + pInset, w:player.w - pInset*2, h:player.h - pInset*2};
     for (const o of obstacles){
       if (hit(pBox, o)) { endGame(); break; }
     }
-
     accelTimer += dt;
     if (accelTimer >= speedEveryMs){
       accelTimer = 0;
