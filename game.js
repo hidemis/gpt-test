@@ -11,16 +11,16 @@
 
   const groundH = 60;
   const gravity = 0.5;
-  const jumpV   = -10;
+  const jumpV   = -10.5; // 少し高く
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
   const speedEveryMs = 1500;
 
-  const maxHoldMs = 100;
-  const holdThrust = -0.2;
-  const jumpBoostMax = 20;
-  const jumpBoostAccel = -0.4;
+  const maxHoldMs = 110; // 少し長く押せる
+  const holdThrust = -0.22;
+  const jumpBoostMax = 22;
+  const jumpBoostAccel = -0.42;
   let spaceHeld = false;
   let holdMs = 0;
   let boostMs = 0;
@@ -143,14 +143,13 @@
     player.vy += gravity;
     player.y  += player.vy;
 
-    // 上限（キャンバス全体高さの30%ライン＝高さ7割）で制限
-    const ceilingY = Math.floor(H * 0.30);
-    const top = player.y; // 円の最上点は y
-    if (top < ceilingY) {
-      player.y = ceilingY + 1;          // 1pxマージンで視覚的な越えを防止
-      if (player.vy < 0) player.vy = 0; // 上昇停止
-      boostMs = jumpBoostMax;           // ブースト停止
-      holdMs  = maxHoldMs;              // 長押し停止
+    // 上限（キャンバス全体高さの25%ライン＝高さ75%）で制限
+    const ceilingY = Math.floor(H * 0.25);
+    if (player.y < ceilingY) {
+      player.y = ceilingY + 1;
+      if (player.vy < 0) player.vy = 0;
+      boostMs = jumpBoostMax;
+      holdMs  = maxHoldMs;
       spaceHeld = false;
     }
 
