@@ -11,13 +11,13 @@
 
   const groundH = 60;
   const gravity = 0.5;
-  const jumpV   = -10.5; // 少し高く
+  const jumpV   = -10.5;
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
   const speedEveryMs = 1500;
 
-  const maxHoldMs = 110; // 少し長く押せる
+  const maxHoldMs = 110;
   const holdThrust = -0.22;
   const jumpBoostMax = 22;
   const jumpBoostAccel = -0.42;
@@ -104,6 +104,32 @@
     skyGrad.addColorStop(1, '#e1f5fe');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0,0,W,H);
+
+    // 雲
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    for (let i = 0; i < 3; i++) {
+      const x = (offset * 0.1 + i * 250) % (W + 200) - 100;
+      const y = 50 + i * 20;
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.arc(x + 25, y + 5, 20, 0, Math.PI * 2);
+      ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 山
+    ctx.fillStyle = '#8d6e63';
+    for (let i = 0; i < 3; i++) {
+      const mx = (offset * 0.05 + i * 300) % (W + 200) - 100;
+      ctx.beginPath();
+      ctx.moveTo(mx, H - groundH);
+      ctx.lineTo(mx + 150, H - groundH);
+      ctx.lineTo(mx + 75, H - groundH - 120);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 地面
     ctx.fillStyle = '#6fcf97';
     ctx.fillRect(0, H - groundH, W, groundH);
   }
@@ -143,7 +169,6 @@
     player.vy += gravity;
     player.y  += player.vy;
 
-    // 上限（キャンバス全体高さの25%ライン＝高さ75%）で制限
     const ceilingY = Math.floor(H * 0.25);
     if (player.y < ceilingY) {
       player.y = ceilingY + 1;
