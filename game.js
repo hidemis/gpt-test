@@ -11,16 +11,16 @@
 
   const groundH = 60;
   const gravity = 0.5;
-  const jumpV   = -11; // 最高高度をさらに抑える
+  const jumpV   = -10;
   const baseSpeed = 2.4;
   const maxSpeed  = 7;
   const speedGain = 0.08;
   const speedEveryMs = 1500;
 
-  const maxHoldMs = 120;
-  const holdThrust = -0.25;
-  const jumpBoostMax = 30;
-  const jumpBoostAccel = -0.5;
+  const maxHoldMs = 100;
+  const holdThrust = -0.2;
+  const jumpBoostMax = 20;
+  const jumpBoostAccel = -0.4;
   let spaceHeld = false;
   let holdMs = 0;
   let boostMs = 0;
@@ -143,17 +143,17 @@
     player.vy += gravity;
     player.y  += player.vy;
 
-    // ---- 上限（キャンバス高さの約7割）で頭打ち ----
-    const playTop = 0;
-    const playH   = H - groundH;            // 地面を除いたプレイ領域
-    const ceilingY = Math.floor(playTop + playH * 0.30); // 上から30%のライン
-    if (player.y < ceilingY) {
-      player.y = ceilingY;
-      if (player.vy < 0) player.vy = 0;
-      boostMs = jumpBoostMax;  // ブースト停止
-      holdMs  = maxHoldMs;     // 長押し停止
+    // 上限（キャンバス全体高さの30%ライン＝高さ7割）で制限
+    const ceilingY = Math.floor(H * 0.30);
+    const top = player.y; // 円の最上点は y
+    if (top < ceilingY) {
+      player.y = ceilingY + 1;          // 1pxマージンで視覚的な越えを防止
+      if (player.vy < 0) player.vy = 0; // 上昇停止
+      boostMs = jumpBoostMax;           // ブースト停止
+      holdMs  = maxHoldMs;              // 長押し停止
       spaceHeld = false;
     }
+
     if (player.y + player.h >= H - groundH){
       player.y = H - groundH - player.h;
       player.vy = 0;
@@ -161,6 +161,7 @@
       holdMs = 0;
       boostMs = 0;
     }
+
     obstacles.forEach(o => { o.x -= speed; });
     for (let i=obstacles.length-1; i>=0; i--){
       if (obstacles[i].x + obstacles[i].w < 0){
@@ -168,12 +169,14 @@
         setScore(score + 1);
       }
     }
+
     maybeSpawn(ts);
     const pInset = 4;
     const pBox = {x:player.x + pInset, y:player.y + pInset, w:player.w - pInset*2, h:player.h - pInset*2};
     for (const o of obstacles){
       if (hit(pBox, o)) { endGame(); break; }
     }
+
     accelTimer += dt;
     if (accelTimer >= speedEveryMs){
       accelTimer = 0;
