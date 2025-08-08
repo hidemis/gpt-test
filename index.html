@@ -5,14 +5,23 @@
     <title>ジャンピングプラットフォームランナー</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <h1>ジャンピングプラットフォームランナー</h1>
-    <!-- スコア表示 -->
-    <div id="score">スコア: 0</div>
-    <!-- ゲーム用キャンバス -->
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <body class="parallax">
+    <div class="hud">
+      <h1>ジャンピングプラットフォームランナー</h1>
+      <div id="score">Score: 0 | High Score: 0</div>
+    </div>
+
+    <!-- ゲームエリア（JSが参照する要素） -->
+    <div id="gameArea" class="game-area">
+      <!-- キャラクター（JSが参照する要素） -->
+      <div id="character" class="character"></div>
+      <!-- 地面 -->
+      <div class="ground"></div>
+    </div>
+
     <!-- リトライボタン -->
-    <button id="retryButton">リトライ</button>
+    <button id="retryButton" class="btn retry">リトライ</button>
+
     <script src="game.js"></script>
   </body>
 </html>
